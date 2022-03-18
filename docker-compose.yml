@@ -1,0 +1,112 @@
+version : "3.9"
+services : 
+ zipkin :
+  #profiles:
+    #- donotstart
+  image : openzipkin/zipkin
+  container_name : zipkin-p
+  ports : 
+   - "9411:9411"
+  networks:
+   - product-nt 
+
+ eureka-s:
+   #profiles:
+   #- donotstart
+   container_name: eureka-s
+   build:
+     context: eureka-s/
+     dockerfile: Dockerfile
+   image: prabarshana/eureka-s
+   environment:
+    - JAR_FILE=build/libs/eureka-s-0.0.1-SNAPSHOT.jar
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+   ports:
+    - 8761:8761
+   networks:
+    - product-nt
+
+ product:
+   #profiles:
+   #- donotstart
+   container_name: price-engine-service
+   build:
+     context: price-engine-service/
+     dockerfile: Dockerfile
+   image: prabarshana/price-engine-service
+   environment:
+    - JAR_FILE=build/libs/price-engine-service-0.0.1-SNAPSHOT.jar
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+   ports:
+    - 8080:8080
+   networks:
+    - product-nt
+   depends_on:
+    - postgres
+    - eureka-s
+    - s-api-gw
+       
+ s-api-gw:
+   #profiles:
+   #- donotstart 
+   container_name:  s-api-gw
+   build:
+     context: s-api-gw/
+     dockerfile: Dockerfile
+   image: prabarshana/s-api-gw
+   environment:
+    - JAR_FILE=build/libs/s-api-gw-0.0.1-SNAPSHOT.jar
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+   ports:
+    - 8083:8083
+   networks:
+    - product-nt
+   depends_on:
+    - eureka-s
+    - zipkin 
+            
+ postgres:
+    #profiles:
+     #- donotstart
+    container_name: postgres-p
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - product-nt
+    restart: unless-stopped
+
+ pgadmin:
+    #profiles:
+      #- donotstart
+    container_name: pgadmin-p
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - product-nt
+    restart: unless-stopped
+    depends_on:
+     - postgres
+     
+     
+networks:
+  product-nt:
+    driver: bridge
+
+volumes:
+  postgres:
+  pgadmin:
+  

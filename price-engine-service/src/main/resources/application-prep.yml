@@ -1,0 +1,28 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: products
+  zipkin:
+    base-url: http://zipkin-p:9411
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    generate-ddl: true
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+       format_sql: true
+       dialect: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    url: jdbc:postgresql://postgres-p:5432/product
+    username: postgres
+    password: postgres
+    
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://eureka-s:8761/eureka
